@@ -1,0 +1,7 @@
+# Ignore all JetBrains IDE files
+.idea/
+*.iml
+
+# Optional: ignore build artifacts
+cmake-build-*/
+build/
