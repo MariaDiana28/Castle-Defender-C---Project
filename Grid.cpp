@@ -63,19 +63,25 @@ void Grid::addTower(int mx, int my) {
 
 // spawns a wave of enemies
 void Grid::spawnEnemies() {
-    int enemy_count=0;
-    while (enemy_count<10) {
-        int rand_col=rand() % cols;
-        if (blocks[0][rand_col].isEmpty()==true) {
+    if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
+        int rand_col = rand() % cols;
+        if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
-            // add to the enemy vector
-            Enemy newEnemy(&blocks[0][rand_col], 3);
+            Enemy newEnemy(&blocks[0][rand_col], 3); // use dynamic HP later if needed
             enemies.push_back(newEnemy);
-            enemy_count++;
+            current_wave_enemy_count++;
         }
-        else {continue;}
+    }
+
+    // Finished spawning a wave
+    if (current_wave_enemy_count == enemies_per_wave) {
+        current_wave++;
+        current_wave_enemy_count = 0;
+
+        // You can add AI adaptation here later
     }
 }
+
 
 void Grid::deleteEnemies(Enemy& to_be_deleted) {
     for (int i = 0; i < enemies.size(); i++) {
@@ -188,11 +194,11 @@ void Grid::towerAttack() {
 
 // one step of the game: spawn enemies -> towers attack -> enemies move
 void Grid::step() {
-    // only spawn enemies for the first 10 steps. max_waves = 10
-    if (current_wave < max_waves) {
+    // Only spawn if there are no enemies on the grid and we still have enemies left in this wave
+    if (current_wave < max_waves && enemies.empty() && current_wave_enemy_count < enemies_per_wave) {
         spawnEnemies();
-        current_wave++;
     }
+
     towerAttack();
     moveEnemies();
 }

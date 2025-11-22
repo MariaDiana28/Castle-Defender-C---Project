@@ -25,7 +25,8 @@ private:
     int castle_hp=100;
     int current_wave = 0; // wave of enemies
     int current_wave_enemy_count=0; // to spawn 10 enemies pwe turn
-    int max_waves = 10;
+    int max_waves = 5;
+    int enemies_per_wave=10;
     int score = 0;
 public:
     Grid(int startX, int startY, int cellSize);

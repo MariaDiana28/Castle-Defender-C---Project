@@ -23,7 +23,7 @@ public:
 private:
     Grid grid;
     bool running = false;
-    double tick_interval = 1;
+    double tick_interval = 0.2;
     Fl_Text_Display* infoDisplay = nullptr;
     Fl_Text_Buffer* infoBuffer = nullptr;
 };
