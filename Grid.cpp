@@ -61,13 +61,23 @@ void Grid::addTower(int mx, int my) {
     tower_count++;
 }
 
+void Grid::threatWeights() {
+    threat_weights.clear();
+    int peak = max_threat / 2;
+    for (int c = 0; c < cols; c++) {
+        int t = threat_levels[c]; // get threat level at column c
+        int weight = max(1, (peak + 1) - abs(t - peak));
+        threat_weights.push_back(weight);
+    }
+}
+
 // spawns a wave of enemies
 void Grid::spawnEnemies() {
     if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
         int rand_col = rand() % cols;
         if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
-            Enemy newEnemy(&blocks[0][rand_col], 3); // use dynamic HP later if needed
+            Enemy newEnemy(&blocks[0][rand_col], default_hp);
             enemies.push_back(newEnemy);
             current_wave_enemy_count++;
         }
@@ -75,13 +85,16 @@ void Grid::spawnEnemies() {
 
     // Finished spawning a wave
     if (current_wave_enemy_count == enemies_per_wave) {
+        // Evaluate performance BEFORE incrementing wave
+        if (score >= current_wave * 80) {
+            default_hp += 1;
+        } else {
+            default_hp = 3;
+        }
         current_wave++;
         current_wave_enemy_count = 0;
-
-        // You can add AI adaptation here later
     }
 }
-
 
 void Grid::deleteEnemies(Enemy& to_be_deleted) {
     for (int i = 0; i < enemies.size(); i++) {
@@ -139,22 +152,16 @@ bool Grid::moveDiagonally(Enemy& enemy) {
 
 // move all enemies at once
 void Grid::moveEnemies() {
-    // backward for loop because we may delete enemies and the size of the vector changes
-    for (int i = int(enemies.size()) - 1; i >= 0; --i) {
-        bool moved = false;
-        if (moveDown(enemies[i])) { //first try to move down
-            moved = true;
-        } else if (moveDiagonally(enemies[i])) {
-            moved = true;
-        }
-        // check if enemy got on the castle row. if yes -> deal damage and remove enemy
-        if (moved) {
-            Block* cell = enemies[i].getEnemyAddress();
-            if (cell->getRow() == castle_row) {
-                castle_hp-=10;
-                deleteEnemies(enemies[i]);
-                continue;
-            }
+    if (enemies.empty()) return;
+
+    Enemy& enemy = enemies[0];
+    bool moved = moveDown(enemy) || moveDiagonally(enemy);
+
+    if (moved) {
+        Block* cell = enemy.getEnemyAddress();
+        if (cell->getRow() == castle_row) {
+            castle_hp -= 10;
+            deleteEnemies(enemy);
         }
     }
 }

@@ -29,3 +29,4 @@ int Enemy::getEnemyHP() const {
 void Enemy::setEnemyHP(int new_hp) {
     this->hp=new_hp;
 }
+

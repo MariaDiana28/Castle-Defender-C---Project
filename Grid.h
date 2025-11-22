@@ -20,7 +20,9 @@ private:
     int castle_col=cols/2;
     vector<vector<Block>> blocks; // store all of the cells
     vector<Enemy> enemies; // keep track of enemies
-    vector<Tower> towers; // keep track of towers
+    vector<Tower> towers;
+    vector<int> threat_levels;
+    vector<int> threat_weights;
     int tower_count=0;
     int castle_hp=100;
     int current_wave = 0; // wave of enemies
@@ -28,12 +30,16 @@ private:
     int max_waves = 5;
     int enemies_per_wave=10;
     int score = 0;
+    int default_hp;
+    int max_threat=0;
 public:
     Grid(int startX, int startY, int cellSize);
     void createGrid();
     void placeCastle();
     void draw();
     void addTower(int mx, int my);
+    void threatLevels();
+    void threatWeights();
     void spawnEnemies();
     void deleteEnemies(Enemy& to_be_deleted);
     bool moveDown(Enemy& enemy);

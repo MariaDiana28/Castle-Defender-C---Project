@@ -10,12 +10,15 @@ class Enemy{
 private:
     Block* enemy_address;
     int hp;
+    int default_hp;
 public:
     Enemy(Block *enemy_address, int hp=3);
     Block* getEnemyAddress();
     void setEnemyAddress(Block* new_address);
     int getEnemyHP() const;
     void setEnemyHP(int new_hp);
+    void changeDefaultHP();
+    int getDefaultHP();
 };
 
 
