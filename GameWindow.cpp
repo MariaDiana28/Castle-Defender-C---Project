@@ -13,7 +13,7 @@ GameWindow::GameWindow(int w, int h, const char* title)
     int infoX = gridRightX + 20;
     int infoY = 50;
     int infoW = 180;
-    int infoH = 100;
+    int infoH = 150;
 
     infoBuffer = new Fl_Text_Buffer(); // text in the display
     infoDisplay = new Fl_Text_Display(infoX, infoY, infoW, infoH, "Game Info"); // actual display widget
@@ -22,7 +22,7 @@ GameWindow::GameWindow(int w, int h, const char* title)
     infoDisplay->textsize(20);
     infoDisplay->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
 
-    infoBuffer->text("Castle HP: 100\nScore: 0\nEnemies Left: -\n");
+    infoBuffer->text("Castle HP: 100\nScore: 0\nEnemies Left: -\nStarted Adaptive Spawning? \n");
 
     this->end();
 }
@@ -81,6 +81,6 @@ void GameWindow::tick() {
 
 void GameWindow::updateInfoDisplay() {
     char buffer[128];
-    sprintf(buffer, "Castle HP: %d\nScore: %d\nEnemies Left: %d\n", grid.getCastleHP(), grid.getScore(), grid.getEnemiesLeft());
+    sprintf(buffer, "Castle HP: %d\nScore: %d\nEnemies Left: %d\nStarted Adaptive Spawning? %d\n", grid.getCastleHP(), grid.getScore(), grid.getEnemiesLeft(), grid.startedAdaptiveSpawning());
     infoBuffer->text(buffer);
 }

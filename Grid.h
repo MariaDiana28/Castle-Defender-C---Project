@@ -10,6 +10,8 @@
 #include "Enemy.h"
 #include "Tower.h"
 #include <vector>
+#include <algorithm>
+#include <iostream>
 using namespace std;
 
 class Grid {
@@ -32,6 +34,7 @@ private:
     int score = 0;
     int default_hp;
     int max_threat=0;
+    bool adaptive_spawn=false;
 public:
     Grid(int startX, int startY, int cellSize);
     void createGrid();
@@ -40,6 +43,7 @@ public:
     void addTower(int mx, int my);
     void threatLevels();
     void threatWeights();
+    int selectColumnByWeight();
     void spawnEnemies();
     void deleteEnemies(Enemy& to_be_deleted);
     bool moveDown(Enemy& enemy);
@@ -54,6 +58,7 @@ public:
     int getCastleHP();
     int getScore();
     int getEnemiesLeft();
+    bool startedAdaptiveSpawning();
 };
 
 #endif //CASTLE_DEFENDER_GRID_H

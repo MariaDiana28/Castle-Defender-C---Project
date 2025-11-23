@@ -61,6 +61,29 @@ void Grid::addTower(int mx, int my) {
     tower_count++;
 }
 
+void Grid::threatLevels() {
+    threat_levels.clear();
+    max_threat = 0;
+
+    for (int col = 0; col < cols; ++col) {
+        int threat = 0;
+        int left = max(0, col - 2);
+        int right = min(cols - 1, col + 2);
+
+        for (Tower& tower : towers) {
+            int tower_col = tower.getTowerAddress()->getCol();
+            if (tower_col >= left && tower_col <= right) {
+                threat++;
+            }
+        }
+
+        threat_levels.push_back(threat);
+        if (threat > max_threat) {
+            max_threat = threat;
+        }
+    }
+}
+
 void Grid::threatWeights() {
     threat_weights.clear();
     int peak = max_threat / 2;
@@ -71,10 +94,63 @@ void Grid::threatWeights() {
     }
 }
 
+// Found an algorithm here: https://stackoverflow.com/questions/1761626/weighted-random-numbers
+int Grid::selectColumnByWeight() {
+    int sum_of_weights = 0;
+    for (int w = 0; w < threat_weights.size(); ++w) {
+        sum_of_weights += threat_weights[w];
+    }
+    // Safety check
+    if (sum_of_weights == 0) return rand() % cols;
+    int r = rand() % sum_of_weights;
+    for (int i = 0; i < threat_weights.size(); ++i) {
+        if (r < threat_weights[i])
+            return i;
+        r -= threat_weights[i];
+    }
+}
+
 // spawns a wave of enemies
 void Grid::spawnEnemies() {
     if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
-        int rand_col = rand() % cols;
+        int rand_col;
+        if (!adaptive_spawn) {
+            rand_col = rand() % cols;
+            cout << "[Random Spawn] Column: " << rand_col << endl;
+        } else {
+            threatLevels();
+            threatWeights();
+            rand_col = selectColumnByWeight();
+
+            cout << "[Adaptive Spawn]\n";
+
+            // Print threat levels
+            cout << "Threat Levels: ";
+            for (int t : threat_levels) cout << t << " ";
+            cout << endl;
+
+            // Print threat weights
+            cout << "Threat Weights: ";
+            for (int w : threat_weights) cout << w << " ";
+            cout << endl;
+
+            // Best columns
+            int max_weight = *max_element(threat_weights.begin(), threat_weights.end());
+            vector<int> best_columns;
+            for (int i = 0; i < threat_weights.size(); ++i) {
+                if (threat_weights[i] == max_weight) best_columns.push_back(i);
+            }
+
+            // Sort and print best columns
+            sort(best_columns.begin(), best_columns.end());
+            cout << "Best Columns (Weight = " << max_weight << "): ";
+            for (int col : best_columns) cout << col << " ";
+            cout << endl;
+
+            // Print selected column
+            cout << "Selected Column: " << rand_col << endl;
+        }
+
         if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
             Enemy newEnemy(&blocks[0][rand_col], default_hp);
@@ -83,9 +159,8 @@ void Grid::spawnEnemies() {
         }
     }
 
-    // Finished spawning a wave
+    // Post-wave logic
     if (current_wave_enemy_count == enemies_per_wave) {
-        // Evaluate performance BEFORE incrementing wave
         if (score >= current_wave * 80) {
             default_hp += 1;
         } else {
@@ -93,6 +168,11 @@ void Grid::spawnEnemies() {
         }
         current_wave++;
         current_wave_enemy_count = 0;
+    }
+
+    if (!adaptive_spawn && current_wave >= 2 && castle_hp >= 70) {
+        adaptive_spawn = true;
+        cout << "[Adaptive Spawning ENABLED]\n";
     }
 }
 
@@ -240,4 +320,8 @@ int Grid::getScore() {
 // helper for displaying
 int Grid::getEnemiesLeft() {
     return enemies.size();
+}
+
+bool Grid::startedAdaptiveSpawning() {
+    return adaptive_spawn;
 }
