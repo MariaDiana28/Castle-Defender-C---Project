@@ -170,7 +170,7 @@ void Grid::spawnEnemies() {
         current_wave_enemy_count = 0;
     }
 
-    if (!adaptive_spawn && current_wave >= 2 && castle_hp >= 70) {
+    if (!adaptive_spawn && current_wave >= 1 && castle_hp >= 80) {
         adaptive_spawn = true;
         cout << "[Adaptive Spawning ENABLED]\n";
     }

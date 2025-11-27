@@ -23,9 +23,11 @@ public:
 private:
     Grid grid;
     bool running = false;
+    bool gameOver = false;
     double tick_interval = 0.1;
     Fl_Text_Display* infoDisplay = nullptr;
     Fl_Text_Buffer* infoBuffer = nullptr;
+    Fl_Button* doneButton;
 };
 
 #endif //CASTLE_DEFENDER_GAMEWINDOW_H

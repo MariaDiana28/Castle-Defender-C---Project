@@ -23,6 +23,7 @@ GameWindow::GameWindow(int w, int h, const char* title)
     infoDisplay->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
 
     infoBuffer->text("Castle HP: 100\nScore: 0\nEnemies Left: -\nStarted Adaptive Spawning? \n");
+    doneButton = new Fl_Button(infoX, infoY + infoH + 20, 100, 40, "Done");
 
     this->end();
 }
@@ -30,21 +31,74 @@ GameWindow::GameWindow(int w, int h, const char* title)
 // draw window and grid
 void GameWindow::draw() {
     Fl_Window::draw();
-    grid.draw();
+
+    if (!gameOver) {
+        grid.draw();
+    } else {
+        // Draw summary screen
+        fl_color(FL_WHITE);
+        fl_rectf(0, 0, w(), h()); // clear window background
+
+        fl_color(FL_BLACK);
+        fl_font(FL_HELVETICA_BOLD, 36);
+        fl_draw("GAME OVER", w() / 2 - 150, h() / 2 - 100);
+
+        fl_font(FL_HELVETICA, 22);
+        char summary[256];
+        sprintf(summary,
+                "Player Score: %d\n"
+                "Enemies Destroyed: %d\n"
+                "Castle Health: %d\n"
+                "Winner: %s",
+                grid.getScore(),
+                grid.getScore() / 10,
+                grid.getCastleHP(),
+                (grid.getCastleHP() > 0 ? "Player" : "AI"));
+
+        // Draw multiline text
+        int y = h() / 2 - 40;
+        char* line = strtok(summary, "\n");
+        while (line) {
+            fl_draw(line, w() / 2 - 150, y);
+            y += 40;
+            line = strtok(nullptr, "\n");
+        }
+
+        fl_font(FL_HELVETICA, 18);
+        fl_draw("Press ESC to exit", w() / 2 - 100, y + 40);
+    }
 }
 
+
 // detect when a cell is clicked and add 5 towers (before the game starts)
-int GameWindow::handle(int event) { // event = cell clicked
+int GameWindow::handle(int event) {
     switch (event) {
         case FL_PUSH: {
+            int mx = Fl::event_x();
+            int my = Fl::event_y();
+
+            // Check if "Done" button was clicked
+            if (!running && doneButton->active()) {
+                if (mx >= doneButton->x() && mx <= doneButton->x() + doneButton->w() &&
+                    my >= doneButton->y() && my <= doneButton->y() + doneButton->h()) {
+                    // Only allow if at least one tower is placed
+                    if (grid.getTowerCount() >= 1) {
+                        running = true;
+                        doneButton->deactivate();
+                        gameDevelopment();  // start game
+                        redraw();
+                        return 1;
+                    }
+                }
+            }
+
+            // Handle grid clicks for placing towers
             if (!running) {
-                int mx = Fl::event_x();
-                int my = Fl::event_y();
                 grid.addTower(mx, my);
-                // auto-start when 5th tower is placed
-                if (!running && grid.getTowerCount() == 5) {
+                if (grid.getTowerCount() == 5) {
+                    doneButton->deactivate();
                     running = true;
-                    gameDevelopment(); // start timer loop
+                    gameDevelopment();
                 }
                 redraw();
             }
@@ -54,6 +108,7 @@ int GameWindow::handle(int event) { // event = cell clicked
             return Fl_Window::handle(event);
     }
 }
+
 
 // starts the game
 void GameWindow::gameDevelopment() {
@@ -66,11 +121,14 @@ void GameWindow::Timer_CB(void* self) {
     static_cast<GameWindow*>(self)->tick();
 }
 
+
 // what happens in each turn
 void GameWindow::tick() {
     grid.step();
     // stop if game ended
     if (grid.getCastleHP() <= 0 || grid.wavesDone()) {
+        running = false;
+        gameOver = true;
         redraw();
         return;
     }
