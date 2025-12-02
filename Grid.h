@@ -36,15 +36,14 @@ private:
     int max_threat=0;
     bool adaptive_spawn=false;
     vector<int> learntDangerousColumns;
+    vector<int> weights;
 public:
     Grid(int startX, int startY, int cellSize);
     void createGrid();
     void placeCastle();
     void draw();
     void addTower(int mx, int my);
-    void threatLevels();
-    void threatWeights();
-    int selectColumnByWeight();
+    int selectColumnByWeight(const vector<int>& weights);
     void spawnEnemies();
     void deleteEnemies(Enemy& to_be_deleted);
     bool moveDown(Enemy& enemy);

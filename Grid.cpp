@@ -14,6 +14,7 @@ Grid::Grid(int startX, int startY, int cellSize) {
     createGrid();
     placeCastle();
     learntDangerousColumns.resize(cols, 0);
+    weights.resize(cols, 100);
 }
 
 // create the cells array and get the coordinates
@@ -62,55 +63,22 @@ void Grid::addTower(int mx, int my) {
     tower_count++;
 }
 
-void Grid::threatLevels() {
-    threat_levels.clear();
-    max_threat = 0;
-
-    for (int col = 0; col < cols; ++col) {
-        int threat = 0;
-        int left = max(0, col - 2);
-        int right = min(cols - 1, col + 2);
-
-        for (Tower& tower : towers) {
-            int tower_col = tower.getTowerAddress()->getCol();
-            if (tower_col >= left && tower_col <= right) {
-                threat++;
-            }
-        }
-
-        threat_levels.push_back(threat);
-        if (threat > max_threat) {
-            max_threat = threat;
-        }
-    }
-}
-
-void Grid::threatWeights() {
-    threat_weights.clear();
-    int peak = max_threat / 2;
-    for (int c = 0; c < cols; c++) {
-        int t = threat_levels[c]; // get threat level at column c
-        int weight = max(1, (peak + 1) - abs(t - peak));
-        // NEW: incorporate learned danger
-        weight = weight / (1 + learntDangerousColumns[c]);
-        threat_weights.push_back(weight);
-    }
-}
-
 // Found an algorithm here: https://stackoverflow.com/questions/1761626/weighted-random-numbers
-int Grid::selectColumnByWeight() {
-    int sum_of_weights = 0;
-    for (int w = 0; w < threat_weights.size(); ++w) {
-        sum_of_weights += threat_weights[w];
-    }
-    // Safety check
-    if (sum_of_weights == 0) return rand() % cols;
-    int r = rand() % sum_of_weights;
-    for (int i = 0; i < threat_weights.size(); ++i) {
-        if (r < threat_weights[i])
+int Grid::selectColumnByWeight(const vector<int> &weights) {
+    int sum = 0;
+    for (int w : weights)
+        sum += w;
+
+    if (sum == 0)
+        return rand() % cols; // fallback
+
+    int r = rand() % sum;
+    for (int i = 0; i < weights.size(); ++i) {
+        if (r < weights[i])
             return i;
-        r -= threat_weights[i];
+        r -= weights[i];
     }
+    return cols - 1;
 }
 
 // spawns a wave of enemies
@@ -118,42 +86,27 @@ void Grid::spawnEnemies() {
     if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
         int rand_col;
         if (!adaptive_spawn) {
+            // before learning, spawn randomly
             rand_col = rand() % cols;
             cout << "[Random Spawn] Column: " << rand_col << endl;
         } else {
-            threatLevels();
-            threatWeights();
-            rand_col = selectColumnByWeight();
-
-            cout << "[Adaptive Spawn]\n";
-
-            // Print threat levels
-            cout << "Threat Levels: ";
-            for (int t : threat_levels) cout << t << " ";
-            cout << endl;
-
-            // Print threat weights
-            cout << "Threat Weights: ";
-            for (int w : threat_weights) cout << w << " ";
-            cout << endl;
-
-            // Best columns
-            int max_weight = *max_element(threat_weights.begin(), threat_weights.end());
-            vector<int> best_columns;
-            for (int i = 0; i < threat_weights.size(); ++i) {
-                if (threat_weights[i] == max_weight) best_columns.push_back(i);
+            // LEARNING-BASED SPAWNING
+            for (int c = 0; c < cols; ++c) {
+                // Higher danger → smaller weight
+                weights[c] = 100 / (1 + learntDangerousColumns[c]);
             }
 
-            // Sort and print best columns
-            sort(best_columns.begin(), best_columns.end());
-            cout << "Best Columns (Weight = " << max_weight << "): ";
-            for (int col : best_columns) cout << col << " ";
-            cout << endl;
+            rand_col = selectColumnByWeight(weights);
 
-            // Print selected column
-            cout << "Selected Column: " << rand_col << endl;
+            cout << "[Adaptive Spawn]\n";
+            cout << "Learnt Danger: ";
+            for (int d : learntDangerousColumns) cout << d << " ";
+            cout << "\nWeights: ";
+            for (int w : weights) cout << w << " ";
+            cout << "\nSELECTED COLUMN = " << rand_col << "\n\n";
         }
 
+        // Place enemy if empty
         if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
             Enemy newEnemy(&blocks[0][rand_col], default_hp, false, false);
@@ -162,13 +115,15 @@ void Grid::spawnEnemies() {
         }
     }
 
-    // Post-wave logic
+    // -------- POST WAVE LOGIC ----------
     if (current_wave_enemy_count == enemies_per_wave) {
+
         if (score >= current_wave * 80) {
             default_hp += 1;
         } else {
             default_hp = 3;
         }
+
         current_wave++;
         current_wave_enemy_count = 0;
     }
@@ -178,6 +133,7 @@ void Grid::spawnEnemies() {
         cout << "[Adaptive Spawning ENABLED]\n";
     }
 }
+
 
 void Grid::deleteEnemies(Enemy& to_be_deleted) {
     for (int i = 0; i < enemies.size(); i++) {
@@ -279,10 +235,10 @@ void Grid::towerAttack() {
         for (int e=0; e<enemies.size(); e++) {
             if (inRange(towers[t], enemies[e], 2)) {
                 int this_hp=enemies[e].getEnemyHP();
+                int col = enemies[e].getEnemyAddress()->getCol();
+                learntDangerousColumns[col] += 1;
                 // if hp>1 -> deal damage
                 if (this_hp>1) {
-                    int col = enemies[e].getEnemyAddress()->getCol();
-                    learntDangerousColumns[col] += 1;   // learned danger
                     this_hp--;
                     enemies[e].setEnemyHP(this_hp);
                 }
@@ -308,10 +264,11 @@ void Grid::step() {
     }
 
     // 2. Move all enemies
-    towerAttack();
+
 
     // 3. Towers attack enemies
     moveEnemies();
+    towerAttack();
 }
 
 
