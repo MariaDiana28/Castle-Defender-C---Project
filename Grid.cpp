@@ -13,6 +13,7 @@ Grid::Grid(int startX, int startY, int cellSize) {
     blocks.resize(rows, vector<Block>(cols, Block(0, 0, cellSize, 0, 0))); // add cells to the vector
     createGrid();
     placeCastle();
+    learntDangerousColumns.resize(cols, 0);
 }
 
 // create the cells array and get the coordinates
@@ -90,6 +91,8 @@ void Grid::threatWeights() {
     for (int c = 0; c < cols; c++) {
         int t = threat_levels[c]; // get threat level at column c
         int weight = max(1, (peak + 1) - abs(t - peak));
+        // NEW: incorporate learned danger
+        weight = weight / (1 + learntDangerousColumns[c]);
         threat_weights.push_back(weight);
     }
 }
@@ -153,7 +156,7 @@ void Grid::spawnEnemies() {
 
         if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
-            Enemy newEnemy(&blocks[0][rand_col], default_hp);
+            Enemy newEnemy(&blocks[0][rand_col], default_hp, false, false);
             enemies.push_back(newEnemy);
             current_wave_enemy_count++;
         }
@@ -232,19 +235,35 @@ bool Grid::moveDiagonally(Enemy& enemy) {
 
 // move all enemies at once
 void Grid::moveEnemies() {
-    if (enemies.empty()) return;
+    for (int i = int(enemies.size()) - 1; i >= 0; --i) {
 
-    Enemy& enemy = enemies[0];
-    bool moved = moveDown(enemy) || moveDiagonally(enemy);
+        Enemy &enemy = enemies[i];
 
-    if (moved) {
-        Block* cell = enemy.getEnemyAddress();
-        if (cell->getRow() == castle_row) {
-            castle_hp -= 10;
-            deleteEnemies(enemy);
+        // Step 1: if enemy is not ready to move, enable and skip
+        if (!enemy.canMove()) {
+            enemy.enableMovement();  // next turn he moves
+            continue;
+        }
+
+        // Step 2: enemy can move now
+        bool moved = false;
+        if (moveDown(enemy)) {
+            moved = true;
+        } else if (moveDiagonally(enemy)) {
+            moved = true;
+        }
+
+        // Step 3: reached castle row?
+        if (moved) {
+            Block* cell = enemy.getEnemyAddress();
+            if (cell->getRow() == castle_row) {
+                castle_hp -= 10;
+                deleteEnemies(enemy);
+            }
         }
     }
 }
+
 
 // check if enemy is in range 2 from a tower
 bool Grid::inRange(Tower tower, Enemy& enemy, int range) {
@@ -262,6 +281,8 @@ void Grid::towerAttack() {
                 int this_hp=enemies[e].getEnemyHP();
                 // if hp>1 -> deal damage
                 if (this_hp>1) {
+                    int col = enemies[e].getEnemyAddress()->getCol();
+                    learntDangerousColumns[col] += 1;   // learned danger
                     this_hp--;
                     enemies[e].setEnemyHP(this_hp);
                 }
@@ -281,14 +302,18 @@ void Grid::towerAttack() {
 
 // one step of the game: spawn enemies -> towers attack -> enemies move
 void Grid::step() {
-    // Only spawn if there are no enemies on the grid and we still have enemies left in this wave
-    if (current_wave < max_waves && enemies.empty() && current_wave_enemy_count < enemies_per_wave) {
+    // 1. Spawn at most 1 enemy per turn
+    if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
         spawnEnemies();
     }
 
+    // 2. Move all enemies
     towerAttack();
+
+    // 3. Towers attack enemies
     moveEnemies();
 }
+
 
 // helper
 int Grid::getCastleHP() {

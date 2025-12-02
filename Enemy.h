@@ -11,14 +11,18 @@ private:
     Block* enemy_address;
     int hp;
     int default_hp;
+    bool readyToMove;
+    bool readyToDie;
 public:
-    Enemy(Block *enemy_address, int hp=3);
+    Enemy(Block *enemy_address, int hp=3, bool readyToMove=false, bool readyToDie=false);
     Block* getEnemyAddress();
     void setEnemyAddress(Block* new_address);
     int getEnemyHP() const;
     void setEnemyHP(int new_hp);
     void changeDefaultHP();
     int getDefaultHP();
+    bool canMove();
+    void enableMovement();
 };
 
 

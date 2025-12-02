@@ -35,6 +35,7 @@ private:
     int default_hp;
     int max_threat=0;
     bool adaptive_spawn=false;
+    vector<int> learntDangerousColumns;
 public:
     Grid(int startX, int startY, int cellSize);
     void createGrid();
