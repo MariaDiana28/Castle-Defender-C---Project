@@ -104,7 +104,7 @@ void Grid::spawnEnemies() {
                 // Higher danger → smaller weight
                 // at each step. update the column weights based on the changes in the learnt danger
                 if (learntDangerousColumns[c] == 0)
-                    weights[c] = 200;        // strong safe bonus
+                    weights[c] = 200;        // boost weights if column is safe. if towers are placed well, almost no columns are safer and AI behavior is not great if left at 100. . With 200, it may sometimes appear to be too strong, but I left it like this to clearly show that it works. You can decrease the weights here to make the game more balanced. To test if it works, I suggest placing the towers on one half of the grid, and you will see that it quickly learns to spawn enemies on the other half.
                 else
                     weights[c] = 100 / (1 + learntDangerousColumns[c]);
             }
