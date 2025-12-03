@@ -131,8 +131,6 @@ void Grid::spawnEnemies() {
     if (current_wave_enemy_count == enemies_per_wave) { // after each wave is complete
         if (score >= current_wave * 80) {
             default_hp += 1; // increase HP if player is doing too well
-        } else {
-            default_hp = 3; // reset to default if AI has started doing too well
         }
         current_wave++; // move to the next wave
         current_wave_enemy_count = 0; // start over with the next wave
