@@ -103,7 +103,10 @@ void Grid::spawnEnemies() {
             for (int c = 0; c < cols; ++c) {
                 // Higher danger → smaller weight
                 // at each step. update the column weights based on the changes in the learnt danger
-                weights[c] = 100 / (1 + learntDangerousColumns[c]);
+                if (learntDangerousColumns[c] == 0)
+                    weights[c] = 200;        // strong safe bonus
+                else
+                    weights[c] = 100 / (1 + learntDangerousColumns[c]);
             }
             // use the function defined above for weighted picking of columns -> pick safer columns with a higher probability
             rand_col = selectColumnByWeight(weights);
