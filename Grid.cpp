@@ -229,6 +229,10 @@ void Grid::moveEnemies() {
             Block* cell = enemy.getEnemyAddress();
             if (cell->getRow() == castle_row) {
                 castle_hp -= 10; // damage castle
+                // make sure castle HP never becomes negative during the tick that happens after it dies (for visual update purposes)
+                if (castle_hp < 0) {
+                    castle_hp = 0;
+                }
                 deleteEnemies(enemy); // remove enemy
             }
         }

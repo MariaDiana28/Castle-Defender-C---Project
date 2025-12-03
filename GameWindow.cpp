@@ -128,7 +128,14 @@ void GameWindow::Timer_CB(void* self) {
 void GameWindow::tick() {
     grid.step();
     // stop if game ended
-    if (grid.getCastleHP() <= 0 || grid.wavesDone()) {
+    if (!gameOverPending && (grid.getCastleHP() <= 0 || grid.wavesDone())) {
+        gameOverPending = true;
+        updateInfoDisplay();  // show final scoreboard
+        redraw();
+        Fl::repeat_timeout(0.1, Timer_CB, this);  // one more redraw cycle
+        return;
+    }
+    if (gameOverPending) {
         running = false;
         gameOver = true;
         redraw();

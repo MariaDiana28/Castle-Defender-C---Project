@@ -24,6 +24,7 @@ private:
     Grid grid;
     bool running = false;
     bool gameOver = false;
+    bool gameOverPending = false; // to give time to visually update the game after it ends, delay the game end by one tick
     double tick_interval = 0.15; // how fast enemies move / the grid is updated. You can adjust them so the game moves slower or quicker
     Fl_Text_Display* infoDisplay = nullptr;
     Fl_Text_Buffer* infoBuffer = nullptr;
