@@ -8,7 +8,7 @@
 
 class Tower {
 private:
-    Block* tower_address;
+    Block* tower_address; // to keep track of which blocks are towers
     int range;
 public:
     Tower(Block* tower_address, int range=2);

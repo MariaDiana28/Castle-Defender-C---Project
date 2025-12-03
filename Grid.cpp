@@ -13,8 +13,8 @@ Grid::Grid(int startX, int startY, int cellSize) {
     blocks.resize(rows, vector<Block>(cols, Block(0, 0, cellSize, 0, 0))); // add cells to the vector
     createGrid();
     placeCastle();
-    learntDangerousColumns.resize(cols, 0);
-    weights.resize(cols, 100);
+    learntDangerousColumns.resize(cols, 0); // initially, no column is dangerous, no prior knowledge about the towers
+    weights.resize(cols, 100); // initially, all of the columns have the same weights
 }
 
 // create the cells array and get the coordinates
@@ -28,10 +28,12 @@ void Grid::createGrid() {
     }
 }
 
+// set the castle cell
 void Grid::placeCastle() {
     blocks[castle_row][castle_col].setType(CellType::CASTLE);
 }
 
+// draw the grid
 void Grid::draw() {
     for (int r=0; r<rows; r++) {
         for (int c=0; c<cols; c++) {
@@ -64,6 +66,7 @@ void Grid::addTower(int mx, int my) {
 }
 
 // Found an algorithm here: https://stackoverflow.com/questions/1761626/weighted-random-numbers
+// Pick the column where to spawn the enemy by weights. Obviously, columns with smaller weights still have a probability to be picked
 int Grid::selectColumnByWeight(const vector<int> &weights) {
     int sum = 0;
     for (int w : weights)
@@ -134,7 +137,7 @@ void Grid::spawnEnemies() {
     }
 }
 
-
+// remove enemies when they die. remove them from the enemy vector, change the cell type to EMPTY
 void Grid::deleteEnemies(Enemy& to_be_deleted) {
     for (int i = 0; i < enemies.size(); i++) {
         if (enemies[i].getEnemyAddress() == to_be_deleted.getEnemyAddress()) {
@@ -153,8 +156,8 @@ bool Grid::moveDown(Enemy& enemy) {
     int next_r = curr_r + 1;
     Block *address_next_enemy = &blocks[next_r][curr_c]; // determine where to move
     if (blocks[next_r][curr_c].isEmpty()) {
-        current_enemy->setType(CellType::EMPTY);
-        blocks[next_r][curr_c].setType(CellType::ENEMY);
+        current_enemy->setType(CellType::EMPTY); // update the cell of the enemy to be moved
+        blocks[next_r][curr_c].setType(CellType::ENEMY); // new enemy cell
         enemy.setEnemyAddress(address_next_enemy); // relocate in the enemy vector as well
         return true;
     }
@@ -171,13 +174,15 @@ bool Grid::moveDiagonally(Enemy& enemy) {
     int l_c=curr_c-1;
     // move right
     int r_c=curr_c+1;
+    // first try to move left
     if (curr_c!=0 && blocks[next_r][l_c].isEmpty()) {
         Block *address_next_enemy = &blocks[next_r][l_c];
-        current_enemy->setType(CellType::EMPTY);
-        blocks[next_r][l_c].setType(CellType::ENEMY);
+        current_enemy->setType(CellType::EMPTY); // update the cell of the enemy to be moved
+        blocks[next_r][l_c].setType(CellType::ENEMY); // new enemy cell
         enemy.setEnemyAddress(address_next_enemy); // relocate in the enemy vector as well
         return true;
     }
+    // else move right
     else if (curr_c!=cols-1 && blocks[next_r][r_c].isEmpty()) {
         Block *address_next_enemy = &blocks[next_r][r_c];
         current_enemy->setType(CellType::EMPTY);
@@ -191,13 +196,13 @@ bool Grid::moveDiagonally(Enemy& enemy) {
 
 // move all enemies at once
 void Grid::moveEnemies() {
+    // loop through the vector backwards, to avoid indices out of range when updating the enemy vector
     for (int i = int(enemies.size()) - 1; i >= 0; --i) {
+        Enemy &enemy = enemies[i]; // enemy to be moved
 
-        Enemy &enemy = enemies[i];
-
-        // Step 1: if enemy is not ready to move, enable and skip
+        // Step 1: if enemy is not ready to move, enable and skip. This is important for visually updating the grid. Had to implement this because enemies were moving right after spawning and you couldn't see them on the first move. So, move them in the following turn after spawning
         if (!enemy.canMove()) {
-            enemy.enableMovement();  // next turn he moves
+            enemy.enableMovement();  // next turn it moves
             continue;
         }
 
@@ -213,8 +218,8 @@ void Grid::moveEnemies() {
         if (moved) {
             Block* cell = enemy.getEnemyAddress();
             if (cell->getRow() == castle_row) {
-                castle_hp -= 10;
-                deleteEnemies(enemy);
+                castle_hp -= 10; // damage castle
+                deleteEnemies(enemy); // remove enemy
             }
         }
     }
@@ -223,20 +228,22 @@ void Grid::moveEnemies() {
 
 // check if enemy is in range 2 from a tower
 bool Grid::inRange(Tower tower, Enemy& enemy, int range) {
-    int tower_row=tower.getTowerAddress()->getRow(); int tower_col=tower.getTowerAddress()->getCol();
-    int enemy_row=enemy.getEnemyAddress()->getRow(); int enemy_col=enemy.getEnemyAddress()->getCol();
+    int tower_row=tower.getTowerAddress()->getRow(); int tower_col=tower.getTowerAddress()->getCol(); // see where tower is
+    int enemy_row=enemy.getEnemyAddress()->getRow(); int enemy_col=enemy.getEnemyAddress()->getCol(); // see where enemy is
     return (abs(tower_row-enemy_row)<=range && abs(tower_col-enemy_col)<=range); // condition from the project instructions
 }
 
 // implement attacking enemies
 // for each tower, go through the vector of enemies and check which are in range. if in range -> attack
+// if an enemy is attacked, the learntDangerousColumns vector element with the index of the column where the enemy is attacked is increased, so other enemies have a smaller chance of picking it. It acts sort of like reinforcement learning. If a bad column is constantly picked, the learnt danger gets bigger and the weights decrease. So, the learnt danger is not boolean, either dangerous or safe. By increasing the danger to more than one, the enemies have a greater chance to avoid that column, as the idea that it is unsafe is reinforced.
 void Grid::towerAttack() {
     for (int t=0; t<towers.size(); t++) {
         for (int e=0; e<enemies.size(); e++) {
             if (inRange(towers[t], enemies[e], 2)) {
+                // enemy is attacked
                 int this_hp=enemies[e].getEnemyHP();
                 int col = enemies[e].getEnemyAddress()->getCol();
-                learntDangerousColumns[col] += 1;
+                learntDangerousColumns[col] += 1; // FOR THE AI COMPONENT, LEARN THAT THIS COLUMN IS UNSAFE, SO OTHER ENEMIES HAVE A GREATER CHANCE OF AVOIDING IT
                 // if hp>1 -> deal damage
                 if (this_hp>1) {
                     this_hp--;
@@ -246,9 +253,9 @@ void Grid::towerAttack() {
                 else {
                     int curr_col=enemies[e].getEnemyAddress()->getCol();
                     int curr_row=enemies[e].getEnemyAddress()->getRow();
-                    blocks[curr_row][curr_col].setType(CellType::EMPTY);
+                    blocks[curr_row][curr_col].setType(CellType::EMPTY); // update cell
                     enemies.erase(enemies.begin() + e);
-                    score+=10;
+                    score+=10; // increase the score
                     e--;
                 }
             }
@@ -264,11 +271,11 @@ void Grid::step() {
     }
 
     // 2. Move all enemies
-
+    towerAttack();
 
     // 3. Towers attack enemies
     moveEnemies();
-    towerAttack();
+
 }
 
 

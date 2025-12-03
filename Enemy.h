@@ -10,9 +10,10 @@ class Enemy{
 private:
     Block* enemy_address;
     int hp;
-    int default_hp;
-    bool readyToMove;
-    bool readyToDie;
+    int speed;
+    int default_hp; // for adaptive behavior
+    bool readyToMove; // for accurate visualization
+    bool readyToDie; // for accurate visualization
 public:
     Enemy(Block *enemy_address, int hp=3, bool readyToMove=false, bool readyToDie=false);
     Block* getEnemyAddress();

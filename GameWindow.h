@@ -24,10 +24,10 @@ private:
     Grid grid;
     bool running = false;
     bool gameOver = false;
-    double tick_interval = 0.15;
+    double tick_interval = 0.15; // how fast enemies move / the grid is updated. You can adjust them so the game moves slower or quicker
     Fl_Text_Display* infoDisplay = nullptr;
     Fl_Text_Buffer* infoBuffer = nullptr;
-    Fl_Button* doneButton;
+    Fl_Button* doneButton; // to control the number of towers
 };
 
 #endif //CASTLE_DEFENDER_GAMEWINDOW_H

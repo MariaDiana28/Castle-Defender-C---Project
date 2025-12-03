@@ -17,26 +17,23 @@ using namespace std;
 class Grid {
 private:
     int rows=20, cols=20, cellSize;
-    int startX, startY;
+    int startX, startY; // where the grid is drawn
     int castle_row=rows-1;
     int castle_col=cols/2;
     vector<vector<Block>> blocks; // store all of the cells
     vector<Enemy> enemies; // keep track of enemies
-    vector<Tower> towers;
-    vector<int> threat_levels;
-    vector<int> threat_weights;
-    int tower_count=0;
+    vector<Tower> towers; // keep track of towers
+    int tower_count=0; // keep track of hhow many towers were added
     int castle_hp=100;
     int current_wave = 0; // wave of enemies
     int current_wave_enemy_count=0; // to spawn 10 enemies pwe turn
     int max_waves = 5;
     int enemies_per_wave=10;
     int score = 0;
-    int default_hp;
-    int max_threat=0;
+    int default_hp; // value for the default hp, without AI behavior
     bool adaptive_spawn=false;
-    vector<int> learntDangerousColumns;
-    vector<int> weights;
+    vector<int> learntDangerousColumns; // Vector of columns around towers, added dynamically as enemies are killed
+    vector<int> weights; // assign weights to each column, to pick better columns
 public:
     Grid(int startX, int startY, int cellSize);
     void createGrid();
