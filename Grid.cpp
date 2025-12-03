@@ -89,6 +89,7 @@ int Grid::selectColumnByWeight(const vector<int> &weights) {
 // In order to avoid extremely powerful enemies, I have decided to include a boolean adaptive_spawn variables. For the first wave the enemies are only going to be spawned randomly, without using the learnt information.
 // If after the first wave has been spawned, the castle's HP is >= 80, it means that the player is too powerful and I enable adaptive spawning. In the tower attack function, when an enemy gets attacked, the column where the enemy was attacked becomes more dangerous in the learntDangerousColumns vector. Higher values of learnt danger will decrease the odds of those columns being picked by future enemies. Thus, enemies have 0 prior information about where towers are placed, but learn which columns to avoid, there is no rule-based behavior.
 // The enemies' HP is also adapted if the player is doing too well. That is relatively rule-based, but that's what the project instructions suggested we do.
+// It may seem like the AI is too strong sometimes, but I purposely made it like this to showcase that it actually learns. However, if the towers are placed really well, they will span most of the grid and learning will be difficult. But, to accurately test if the learning and weighted selection work, you can place the towers on one half of the grid and the enemies will quickly learn to spawn on the other half.
 // spawns a wave of enemies
 void Grid::spawnEnemies() {
     // check if enemies still need to be spawned
@@ -279,10 +280,10 @@ void Grid::step() {
         spawnEnemies();
     }
 
-    // 2. Move all enemies
+    // 2. Towers attack enemies
     towerAttack();
 
-    // 3. Towers attack enemies
+    // 3. Enemies move
     moveEnemies();
 
 }
