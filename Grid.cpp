@@ -84,8 +84,14 @@ int Grid::selectColumnByWeight(const vector<int> &weights) {
     return cols - 1;
 }
 
+// PART OF THE AI COMPONENT. LEARNING IS ALSO DONE IN THE TOWER ATTACK FUNCTION, WHERE THE ENEMIES LEARN WHICH COLUMNS ARE IN RANGE OF TOWERS WHEN THEY GET ATTACKED. CHECK THE COMMENTS OF THAT FUNCTION TO UNDERSTAND THE LEARNING PART
+// EXPLANATION OF HOW ADAPTIVE SPAWNING WORKS
+// In order to avoid extremely powerful enemies, I have decided to include a boolean adaptive_spawn variables. For the first wave the enemies are only going to be spawned randomly, without using the learnt information.
+// If after the first wave has been spawned, the castle's HP is >= 80, it means that the player is too powerful and I enable adaptive spawning. In the tower attack function, when an enemy gets attacked, the column where the enemy was attacked becomes more dangerous in the learntDangerousColumns vector. Higher values of learnt danger will decrease the odds of those columns being picked by future enemies. Thus, enemies have 0 prior information about where towers are placed, but learn which columns to avoid, there is no rule-based behavior.
+// The enemies' HP is also adapted if the player is doing too well. That is relatively rule-based, but that's what the project instructions suggested we do.
 // spawns a wave of enemies
 void Grid::spawnEnemies() {
+    // check if enemies still need to be spawned
     if (current_wave < max_waves && current_wave_enemy_count < enemies_per_wave) {
         int rand_col;
         if (!adaptive_spawn) {
@@ -93,14 +99,16 @@ void Grid::spawnEnemies() {
             rand_col = rand() % cols;
             cout << "[Random Spawn] Column: " << rand_col << endl;
         } else {
-            // LEARNING-BASED SPAWNING
+            // LEARNING-BASED SPAWNING: AI COMPONENT
             for (int c = 0; c < cols; ++c) {
                 // Higher danger → smaller weight
+                // at each step. update the column weights based on the changes in the learnt danger
                 weights[c] = 100 / (1 + learntDangerousColumns[c]);
             }
-
+            // use the function defined above for weighted picking of columns -> pick safer columns with a higher probability
             rand_col = selectColumnByWeight(weights);
 
+            // couts for debugging in the terminal
             cout << "[Adaptive Spawn]\n";
             cout << "Learnt Danger: ";
             for (int d : learntDangerousColumns) cout << d << " ";
@@ -113,24 +121,24 @@ void Grid::spawnEnemies() {
         if (blocks[0][rand_col].isEmpty()) {
             blocks[0][rand_col].setType(CellType::ENEMY);
             Enemy newEnemy(&blocks[0][rand_col], default_hp, false, false);
-            enemies.push_back(newEnemy);
+            enemies.push_back(newEnemy); // add to the enemy vector to keep track of it
             current_wave_enemy_count++;
         }
     }
 
-    // -------- POST WAVE LOGIC ----------
-    if (current_wave_enemy_count == enemies_per_wave) {
-
+    // Post-wave logic
+    // Adaptive HP, defined based on the formula in the project instructions
+    if (current_wave_enemy_count == enemies_per_wave) { // after each wave is complete
         if (score >= current_wave * 80) {
-            default_hp += 1;
+            default_hp += 1; // increase HP if player is doing too well
         } else {
-            default_hp = 3;
+            default_hp = 3; // reset to default if AI has started doing too well
         }
-
-        current_wave++;
-        current_wave_enemy_count = 0;
+        current_wave++; // move to the next wave
+        current_wave_enemy_count = 0; // start over with the next wave
     }
 
+    // Start adaptive spawning only if the player is doing too well after the first wave or later waves
     if (!adaptive_spawn && current_wave >= 1 && castle_hp >= 80) {
         adaptive_spawn = true;
         cout << "[Adaptive Spawning ENABLED]\n";
@@ -311,6 +319,7 @@ int Grid::getEnemiesLeft() {
     return enemies.size();
 }
 
+// helper
 bool Grid::startedAdaptiveSpawning() {
     return adaptive_spawn;
 }
