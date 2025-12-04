@@ -55,7 +55,6 @@ void GameWindow::draw() {
                 grid.getCastleHP(),
                 (grid.getCastleHP() > 0 ? "Player" : "AI"));
 
-        // Draw multiline text
         int y = h() / 2 - 40;
         char* line = strtok(summary, "\n");
         while (line) {

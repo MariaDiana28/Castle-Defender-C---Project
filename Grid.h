@@ -23,7 +23,7 @@ private:
     vector<vector<Block>> blocks; // store all of the cells
     vector<Enemy> enemies; // keep track of enemies
     vector<Tower> towers; // keep track of towers
-    int tower_count=0; // keep track of hhow many towers were added
+    int tower_count=0; // keep track of how many towers were added
     int castle_hp=100;
     int current_wave = 0; // wave of enemies
     int current_wave_enemy_count=0; // to spawn 10 enemies pwe turn
@@ -32,7 +32,7 @@ private:
     int score = 0;
     int default_hp; // value for the default hp, without AI behavior
     bool adaptive_spawn=false;
-    vector<int> learntDangerousColumns; // Vector of columns around towers, added dynamically as enemies are killed
+    vector<int> learntDangerousColumns; // Vector that stores an index of danger for each column; the higher, the more dangerous
     vector<int> weights; // assign weights to each column, to pick better columns
 public:
     Grid(int startX, int startY, int cellSize);
